@@ -3,13 +3,73 @@
 #include <iostream>
 #include <algorithm>
 
+const std::string portArgumentString = "--port=";
+
+constexpr const size_t helpArgumentsArraySize = 3;
+const std::string helpArgumentStrings[helpArgumentsArraySize] = { "--help","-h","/?" };
+
+uint16_t serverPort = 12345;
+bool printHelpAndQuit = false;
+
+void parseArguments(const std::vector<std::string>& arguments)
+{
+	for (const auto& argument : arguments)
+	{
+		if (argument.compare(0, portArgumentString.length(), portArgumentString) == 0)
+		{
+			serverPort = (uint16_t)std::strtoul(argument.substr(portArgumentString.length()).c_str(), nullptr, 0);
+		}
+		else
+		{
+			for (size_t i = 0; i < helpArgumentsArraySize; ++i)
+			{
+				if (argument == helpArgumentStrings[i])
+				{
+					printHelpAndQuit = true;
+					break;
+				}
+			}
+		}
+	}
+}
+
+void printToolHelp()
+{
+	std::cout << "NetworkTest_Server.exe" << std::endl;
+	std::cout << "enet test echo service server. Supports the following command line arguments:" << std::endl;
+	std::cout << portArgumentString << "[server UDP port]"<< std::endl;
+	for (size_t i = 0; i < helpArgumentsArraySize; ++i)
+	{
+		std::cout << helpArgumentStrings[i] << " print this help message to console and exit." << std::endl;
+	}
+}
+
 int main(int argc, char* argv[])
 {
+	if (argc == 1)
+	{
+		printToolHelp();
+	}
+	std::vector<std::string> argumentsVector;
+	for (int i = 1; i < argc; ++i)
+	{
+		argumentsVector.emplace_back(argv[i]);
+	}
+
+	parseArguments(argumentsVector);
+	if (printHelpAndQuit)
+	{
+		printToolHelp();
+		return 0;
+	}
+
+	std::cout << "Trying to create server on address: 0.0.0.0:" << serverPort << std::endl;
+
 	enet_initialize();
 
 	ENetAddress address;
 	address.host = ENET_HOST_ANY;
-	address.port = 12345;
+	address.port = serverPort;
 	ENetHost* server = enet_host_create(&address, 32, 2, 0, 0);
 	
 	std::cout << "Server listening on address: 0.0.0.0:" << address.port<<std::endl;
